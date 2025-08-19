@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Prayer Aid</title>
+    <!-- Use Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Optional: Use a specific font for better aesthetics */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Main container for the application UI -->
+    <div id="app-container" class="min-h-screen flex items-center justify-center p-4">
+        <!-- The content will be rendered here by JavaScript -->
+    </div>
+
+    <script>
+        // Get the main container element
+        const appContainer = document.getElementById('app-container');
+
+        // State variables to manage the app's current status
+        let stage = 'start';
+        let userFeeling = '';
+        let selectedVerse = null;
+
+        // Hardcoded data source for the Bible verses.
+        // This is the same data from the previous React version.
+        const bibleVerses = {
+            anxiety: [
+                { text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.", reference: "Philippians 4:6-7" },
+                { text: "Come to me, all you who are weary and burdened, and I will give you rest.", reference: "Matthew 11:28" },
+                { text: "When anxiety was great within me, your consolation brought me joy.", reference: "Psalm 94:19" }
+            ],
+            gratitude: [
+                { text: "Give thanks to the Lord, for he is good; his love endures forever.", reference: "Psalm 107:1" },
+                { text: "The Lord is my strength and my shield; my heart trusts in him, and he helps me. My heart leaps for joy, and with my song I praise him.", reference: "Psalm 28:7" },
+                { text: "I will give thanks to the Lord with my whole heart; I will recount all of your wonderful deeds.", reference: "Psalm 9:1" }
+            ],
+            strength: [
+                { text: "I can do all this through him who gives me strength.", reference: "Philippians 4:13" },
+                { text: "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.", reference: "Isaiah 41:10" },
+                { text: "The Lord is my rock, my fortress and my deliverer; my God is my rock, in whom I take refuge, my shield and the horn of my salvation, my stronghold.", reference: "Psalm 18:2" }
+            ],
+            forgiveness: [
+                { text: "For if you forgive other people when they sin against you, your heavenly Father will also forgive you.", reference: "Matthew 6:14" },
+                { text: "Bear with each other and forgive one another if any of you has a grievance against someone. Forgive as the Lord forgave you.", reference: "Colossians 3:13" },
+                { text: "As far as the east is from the west, so far has he removed our transgressions from us.", reference: "Psalm 103:12" }
+            ],
+            guidance: [
+                { text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.", reference: "Proverbs 3:5-6" },
+                { text: "Your word is a lamp for my feet, a light on my path.", reference: "Psalm 119:105" },
+                { text: "Whether you turn to the right or to the left, your ears will hear a voice behind you, saying, 'This is the way; walk in it.'", reference: "Isaiah 30:21" }
+            ],
+            love: [
+                { text: "And so we know and rely on the love God has for us. God is love. Whoever lives in love lives in God, and God in them.", reference: "1 John 4:16" },
+                { text: "But God shows his love for us in that while we were still sinners, Christ died for us.", reference: "Romans 5:8" },
+                { text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.", reference: "John 3:16" }
+            ]
+        };
+
+        // Function to handle the form submission in the 'ask' stage.
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            const inputElement = document.getElementById('feeling-input');
+            userFeeling = inputElement.value;
+
+            if (userFeeling.trim() === '') return;
+
+            // Simple keyword-based logic to find a matching theme.
+            const lowerCaseFeeling = userFeeling.toLowerCase();
+            let foundTheme = null;
+
+            if (lowerCaseFeeling.includes('anxious') || lowerCaseFeeling.includes('worry') || lowerCaseFeeling.includes('stressed')) {
+                foundTheme = 'anxiety';
+            } else if (lowerCaseFeeling.includes('grateful') || lowerCaseFeeling.includes('thankful') || lowerCaseFeeling.includes('blessed')) {
+                foundTheme = 'gratitude';
+            } else if (lowerCaseFeeling.includes('strong') || lowerCaseFeeling.includes('weak') || lowerCaseFeeling.includes('tired')) {
+                foundTheme = 'strength';
+            } else if (lowerCaseFeeling.includes('forgive') || lowerCaseFeeling.includes('guilt')) {
+                foundTheme = 'forgiveness';
+            } else if (lowerCaseFeeling.includes('guidance') || lowerCaseFeeling.includes('lost') || lowerCaseFeeling.includes('confused')) {
+                foundTheme = 'guidance';
+            } else if (lowerCaseFeeling.includes('love') || lowerCaseFeeling.includes('loved') || lowerCaseFeeling.includes('lonely')) {
+                foundTheme = 'love';
+            }
+
+            // Select a verse based on the found theme or a fallback.
+            const verses = foundTheme ? bibleVerses[foundTheme] : null;
+            if (verses && verses.length > 0) {
+                const randomIndex = Math.floor(Math.random() * verses.length);
+                selectedVerse = verses[randomIndex];
+            } else {
+                selectedVerse = {
+                    text: "The Lord bless you and keep you; the Lord make his face shine on you and be gracious to you; the Lord turn his face toward you and give you peace.",
+                    reference: "Numbers 6:24-26"
+                };
+            }
+
+            stage = 'result';
+            renderContent();
+        };
+
+        // Function to reset the app to the initial 'start' stage.
+        const handleStartOver = () => {
+            stage = 'start';
+            userFeeling = '';
+            selectedVerse = null;
+            renderContent();
+        };
+
+        // Renders the main UI based on the current 'stage'
+        const renderContent = () => {
+            let htmlContent = '';
+            switch (stage) {
+                case 'start':
+                    htmlContent = `
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 sm:p-12 max-w-2xl w-full">
+                            <div class="flex flex-col items-center space-y-4 text-center">
+                                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Your Personal Prayer Aid</h1>
+                                <p class="text-lg sm:text-xl text-gray-600 max-w-md">
+                                    A simple, private space to find a Bible verse that resonates with your heart today.
+                                </p>
+                                <button id="start-button"
+                                    class="mt-6 px-8 py-4 bg-purple-600 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                                    Begin Your Reflection
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    appContainer.innerHTML = htmlContent;
+                    document.getElementById('start-button').addEventListener('click', () => {
+                        stage = 'ask';
+                        renderContent();
+                    });
+                    break;
+
+                case 'ask':
+                    htmlContent = `
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 sm:p-12 max-w-2xl w-full">
+                            <div class="flex flex-col items-center space-y-6 w-full max-w-xl text-center">
+                                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">How are you feeling today?</h2>
+                                <p class="text-md sm:text-lg text-gray-600">
+                                    In a few words, describe what's on your heart, or what you would like to pray about.
+                                </p>
+                                <form id="verse-form" class="w-full">
+                                    <input
+                                        type="text"
+                                        id="feeling-input"
+                                        value="${userFeeling}"
+                                        placeholder="e.g., Anxious, grateful, in need of guidance..."
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-200"
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="mt-6 w-full px-8 py-4 bg-purple-600 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                                        Find a Verse
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                    appContainer.innerHTML = htmlContent;
+                    // Add event listener to the newly rendered form
+                    document.getElementById('verse-form').addEventListener('submit', handleSubmit);
+                    break;
+
+                case 'result':
+                    const verseHtml = selectedVerse ? `
+                        <p class="text-2xl sm:text-3xl italic text-gray-700 font-serif leading-relaxed mb-4">
+                            “${selectedVerse.text}”
+                        </p>
+                        <p class="text-lg font-semibold text-purple-600 border-t border-gray-200 pt-4">
+                            ${selectedVerse.reference}
+                        </p>
+                    ` : '';
+                    htmlContent = `
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 sm:p-12 max-w-2xl w-full">
+                            <div class="flex flex-col items-center space-y-6 text-center w-full max-w-xl">
+                                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">A verse for your heart:</h2>
+                                <div class="bg-gray-50 p-6 rounded-2xl shadow-xl w-full">
+                                    ${verseHtml}
+                                </div>
+                                <button id="start-over-button"
+                                    class="mt-6 px-8 py-4 bg-gray-200 text-gray-800 text-lg font-semibold rounded-full shadow-lg hover:bg-gray-300 transition duration-300 transform hover:scale-105">
+                                    Start Over
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    appContainer.innerHTML = htmlContent;
+                    // Add event listener to the newly rendered button
+                    document.getElementById('start-over-button').addEventListener('click', handleStartOver);
+                    break;
+
+                default:
+                    // Fallback to the start screen
+                    stage = 'start';
+                    renderContent();
+            }
+        };
+
+        // Initial call to render the app on page load
+        document.addEventListener('DOMContentLoaded', renderContent);
+    </script>
+</body>
+</html>
